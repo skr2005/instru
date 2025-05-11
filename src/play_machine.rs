@@ -12,6 +12,7 @@ use crate::tune_player::TunePlayer;
 pub struct PlayMachine {
     player: TunePlayer,
     current_playing_event: Option<KeyEvent>,
+    space_on: Option<KeyEvent>,
     flat: bool,
     sharp: bool,
 }
@@ -35,6 +36,7 @@ impl PlayMachine {
         Self {
             player: TunePlayer::new(),
             current_playing_event: None,
+            space_on: None,
             sharp: false,
             flat: false,
         }
@@ -69,6 +71,7 @@ impl PlayMachine {
                 match ch {
                     '.' | '>' => self.flat = true,
                     '/' | '?' => self.sharp = true,
+                    ' ' => self.space_on = Some(k),
                     _ => rep = false,
                 }
                 if rep {
@@ -87,6 +90,12 @@ impl PlayMachine {
             match ch {
                 '.' | '>' => self.flat = false,
                 '/' | '?' => self.sharp = false,
+                ' ' => {
+                    self.space_on = None;
+                    if self.current_playing_event == None {
+                        self.player.stop();
+                    }
+                }
                 x => {
                     rep = false;
                     let x = x.to_ascii_lowercase();
@@ -94,8 +103,10 @@ impl PlayMachine {
                         if let Char(ch) = e.code {
                             let ch = ch.to_ascii_lowercase();
                             if ch == x {
-                                self.player.stop();
-                                self.current_playing_event = None
+                                self.current_playing_event = None;
+                                if self.space_on.is_none() {
+                                    self.player.stop();
+                                }
                             }
                         }
                     }
