@@ -2,8 +2,8 @@ use std::io::stdout;
 
 use crossterm::{
     event::{
-        Event, KeyboardEnhancementFlags, PopKeyboardEnhancementFlags,
-        PushKeyboardEnhancementFlags, read,
+        Event, KeyCode, KeyModifiers, KeyboardEnhancementFlags,
+        PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags, read,
     },
     execute, terminal,
 };
@@ -40,7 +40,15 @@ fn play_loop() {
                 dbg!(k);
             }
             if k.is_press() || k.is_repeat() {
-                if k.code.is_esc() {
+                if k.code.is_esc()
+                    || (k.modifiers.contains(KeyModifiers::CONTROL)
+                        && (k.code == KeyCode::Char('c')
+                            || k.code == KeyCode::Char('C')
+                            || k.code == KeyCode::Char('z')
+                            || k.code == KeyCode::Char('Z')
+                            || k.code == KeyCode::Char('d')
+                            || k.code == KeyCode::Char('D')))
+                {
                     return;
                 }
                 play_machine.handle_on(k);
