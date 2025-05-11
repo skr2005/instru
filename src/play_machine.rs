@@ -71,7 +71,7 @@ impl PlayMachine {
                 match ch {
                     '.' | '>' => self.flat = true,
                     '/' | '?' => self.sharp = true,
-                    ' ' => self.space_on = Some(k),
+                    ' ' | 's' => self.space_on = Some(k),
                     _ => rep = false,
                 }
                 if rep {
@@ -86,27 +86,29 @@ impl PlayMachine {
     pub(crate) fn handle_off(&mut self, k: KeyEvent) {
         use crossterm::event::KeyCode::*;
         if let Char(ch) = k.code {
+            let ch = ch.to_ascii_lowercase();
             let mut rep = true;
             match ch {
                 '.' | '>' => self.flat = false,
                 '/' | '?' => self.sharp = false,
-                ' ' => {
+                ' ' | 's' => {
                     self.space_on = None;
                     if self.current_playing_event == None {
                         self.player.stop();
                     }
                 }
-                x => {
+                _ => {
                     rep = false;
-                    let x = x.to_ascii_lowercase();
-                    if let Some(e) = self.current_playing_event {
-                        if let Char(ch) = e.code {
-                            let ch = ch.to_ascii_lowercase();
-                            if ch == x {
-                                self.current_playing_event = None;
-                                if self.space_on.is_none() {
-                                    self.player.stop();
-                                }
+                    if let Some(KeyEvent {
+                        code: Char(ch_playing),
+                        ..
+                    }) = self.current_playing_event
+                    {
+                        let ch_playing = ch_playing.to_ascii_lowercase();
+                        if ch_playing == ch {
+                            self.current_playing_event = None;
+                            if self.space_on.is_none() {
+                                self.player.stop();
                             }
                         }
                     }
