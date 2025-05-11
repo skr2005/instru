@@ -9,14 +9,14 @@ use crossterm::event::KeyEvent;
 
 use crate::tune_player::TunePlayer;
 
-pub(crate) struct PlayMachine {
-    pub(crate) player: TunePlayer,
-    pub(crate) current_playing_char_lower: Option<char>,
-    pub(crate) flat: bool,
-    pub(crate) sharp: bool,
+pub struct PlayMachine {
+    player: TunePlayer,
+    current_playing_event: Option<KeyEvent>,
+    flat: bool,
+    sharp: bool,
 }
 
-pub(crate) fn low_char2detune_from_c(ch: char) -> Option<f32> {
+fn low_char2detune_from_c(ch: char) -> Option<f32> {
     use detunes_from_c::*;
     match ch.to_ascii_lowercase() {
         'c' => Some(C),
@@ -34,7 +34,7 @@ impl PlayMachine {
     pub(crate) fn new() -> Self {
         Self {
             player: TunePlayer::new(),
-            current_playing_char_lower: None,
+            current_playing_event: None,
             sharp: false,
             flat: false,
         }
@@ -63,12 +63,18 @@ impl PlayMachine {
                 }
                 let detune = alter(detune, det);
                 self.player.start(detune);
-                self.current_playing_char_lower = Some(ch);
+                self.current_playing_event = Some(k);
             } else {
+                let mut rep = true;
                 match ch {
                     '.' | '>' => self.flat = true,
                     '/' | '?' => self.sharp = true,
-                    _ => (),
+                    _ => rep = false,
+                }
+                if rep {
+                    if let Some(e) = self.current_playing_event {
+                        self.handle_on(e);
+                    }
                 }
             }
         }
@@ -77,17 +83,27 @@ impl PlayMachine {
     pub(crate) fn handle_off(&mut self, k: KeyEvent) {
         use crossterm::event::KeyCode::*;
         if let Char(ch) = k.code {
+            let mut rep = true;
             match ch {
                 '.' | '>' => self.flat = false,
                 '/' | '?' => self.sharp = false,
                 x => {
+                    rep = false;
                     let x = x.to_ascii_lowercase();
-                    if let Some(cpc) = self.current_playing_char_lower {
-                        if cpc == x {
-                            self.player.stop();
-                            self.current_playing_char_lower = None
+                    if let Some(e) = self.current_playing_event {
+                        if let Char(ch) = e.code {
+                            let ch = ch.to_ascii_lowercase();
+                            if ch == x {
+                                self.player.stop();
+                                self.current_playing_event = None
+                            }
                         }
                     }
+                }
+            }
+            if rep {
+                if let Some(e) = self.current_playing_event {
+                    self.handle_on(e);
                 }
             }
         }
