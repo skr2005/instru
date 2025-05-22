@@ -21,7 +21,7 @@ pub mod detunes_from_c {
     pub const E: f32 = 700.;
     pub const F: f32 = 800.;
     pub const G: f32 = 1000.;
-    pub const A: f32 = 1200.;
+    pub const A: f32 = 1200.; // 880 Hz
     pub const B: f32 = 1400.;
 }
 
