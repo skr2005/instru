@@ -59,7 +59,7 @@ impl TunePlayer {
             &self.ctx,
             OscillatorOptions {
                 type_: OscillatorType::Sine,
-                frequency: 440.,
+                frequency: 440., // C = 523.25 Hz, not middle C
                 detune,
                 periodic_wave: None,
                 audio_node_options: AudioNodeOptions::default(),
