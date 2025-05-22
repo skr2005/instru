@@ -11,10 +11,11 @@ use crate::tune_player::TunePlayer;
 
 pub struct PlayMachine {
     player: TunePlayer,
-    current_playing_event: Option<KeyEvent>,
+    current_playing_event_normalized: Option<KeyEvent>,
     space_on: Option<KeyEvent>,
     flat: bool,
     sharp: bool,
+    otta_from_default: isize,
 }
 
 fn low_char2detune_from_c(ch: char) -> Option<f32> {
@@ -31,91 +32,138 @@ fn low_char2detune_from_c(ch: char) -> Option<f32> {
     }
 }
 
+fn normalize_char_event(k: KeyEvent) -> KeyEvent {
+    use crossterm::event::KeyCode::*;
+
+    if let Char(ch) = k.code {
+        KeyEvent {
+            code: Char(ch.to_ascii_lowercase()),
+            ..k
+        }
+    } else {
+        k
+    }
+}
+
 impl PlayMachine {
     pub(crate) fn new() -> Self {
         Self {
             player: TunePlayer::new(),
-            current_playing_event: None,
+            current_playing_event_normalized: None,
             space_on: None,
             sharp: false,
             flat: false,
+            otta_from_default: 0,
         }
     }
 
     pub(crate) fn handle_on(&mut self, k: KeyEvent) {
         use crossterm::event::KeyCode::*;
-        if let Char(ch) = k.code {
-            let ch = ch.to_ascii_lowercase();
-            if let Some(detune) = low_char2detune_from_c(ch) {
-                let modif = k.modifiers;
-                let mut otta = 0;
-                if modif.contains(KeyModifiers::SHIFT) {
-                    otta += 1
+
+        let k = normalize_char_event(k);
+
+        let handle_play = |me: &mut Self, detune| {
+            let modif = k.modifiers;
+            let mut otta = me.otta_from_default;
+            if modif.contains(KeyModifiers::SHIFT) {
+                otta += 1
+            }
+            if modif.contains(KeyModifiers::ALT) {
+                otta -= 1
+            }
+            let detune = ottava(detune, otta);
+            let mut det = 0;
+            if me.sharp {
+                det += 1
+            }
+            if me.flat {
+                det -= 1
+            }
+            let detune = alter(detune, det);
+            me.player.start(detune);
+            me.current_playing_event_normalized = Some(k);
+        };
+
+        let handle_non_play = |me: &mut Self| {
+            let rep = match k.code {
+                Char('.') | Char('>') => {
+                    me.flat = true;
+                    true
                 }
-                if modif.contains(KeyModifiers::ALT) {
-                    otta -= 1
+                Char('/') | Char('?') => {
+                    me.sharp = true;
+                    true
                 }
-                let detune = ottava(detune, otta);
-                let mut det = 0;
-                if self.sharp {
-                    det += 1
+                Char(' ') | Char('s') => {
+                    me.space_on = Some(k);
+                    true
                 }
-                if self.flat {
-                    det -= 1
+                Up => {
+                    me.otta_from_default += 1;
+                    true
                 }
-                let detune = alter(detune, det);
-                self.player.start(detune);
-                self.current_playing_event = Some(k);
-            } else {
-                let mut rep = true;
-                match ch {
-                    '.' | '>' => self.flat = true,
-                    '/' | '?' => self.sharp = true,
-                    ' ' | 's' => self.space_on = Some(k),
-                    _ => rep = false,
+                Down => {
+                    me.otta_from_default -= 1;
+                    true
                 }
-                if rep {
-                    if let Some(e) = self.current_playing_event {
-                        self.handle_on(e);
-                    }
+                _ => false,
+            };
+            if rep {
+                if let Some(e) = me.current_playing_event_normalized {
+                    me.handle_on(e);
                 }
             }
+        };
+
+        if let Char(ch) = k.code {
+            if let Some(detune) = low_char2detune_from_c(ch) {
+                handle_play(self, detune);
+                return;
+            }
         }
+        handle_non_play(self);
     }
 
     pub(crate) fn handle_off(&mut self, k: KeyEvent) {
         use crossterm::event::KeyCode::*;
+
+        let k = normalize_char_event(k);
+
         if let Char(ch) = k.code {
-            let ch = ch.to_ascii_lowercase();
-            let mut rep = true;
-            match ch {
-                '.' | '>' => self.flat = false,
-                '/' | '?' => self.sharp = false,
+            let rep = match ch {
+                '.' | '>' => {
+                    self.flat = false;
+                    true
+                }
+                '/' | '?' => {
+                    self.sharp = false;
+                    true
+                }
                 ' ' | 's' => {
                     self.space_on = None;
-                    if self.current_playing_event == None {
+                    if self.current_playing_event_normalized.is_none() {
                         self.player.stop();
                     }
+                    false
                 }
                 _ => {
-                    rep = false;
                     if let Some(KeyEvent {
                         code: Char(ch_playing),
                         ..
-                    }) = self.current_playing_event
+                    }) = self.current_playing_event_normalized
                     {
-                        let ch_playing = ch_playing.to_ascii_lowercase();
                         if ch_playing == ch {
-                            self.current_playing_event = None;
+                            self.current_playing_event_normalized = None;
                             if self.space_on.is_none() {
                                 self.player.stop();
                             }
                         }
-                    }
+                    };
+                    false
                 }
-            }
+            };
             if rep {
-                if let Some(e) = self.current_playing_event {
+                if let Some(e) = self.current_playing_event_normalized {
                     self.handle_on(e);
                 }
             }
