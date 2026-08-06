@@ -108,18 +108,16 @@ impl PlayMachine {
                 }
                 _ => false,
             };
-            if rep {
-                if let Some(e) = me.current_playing_event_normalized {
-                    me.handle_on(e);
-                }
+            if rep && let Some(e) = me.current_playing_event_normalized {
+                me.handle_on(e);
             }
         };
 
-        if let Char(ch) = k.code {
-            if let Some(detune) = low_char2detune_from_c(ch) {
-                handle_play(self, detune);
-                return;
-            }
+        if let Char(ch) = k.code
+            && let Some(detune) = low_char2detune_from_c(ch)
+        {
+            handle_play(self, detune);
+            return;
         }
         handle_non_play(self);
     }
@@ -151,21 +149,18 @@ impl PlayMachine {
                         code: Char(ch_playing),
                         ..
                     }) = self.current_playing_event_normalized
+                        && ch_playing == ch
                     {
-                        if ch_playing == ch {
-                            self.current_playing_event_normalized = None;
-                            if self.space_on.is_none() {
-                                self.player.stop();
-                            }
+                        self.current_playing_event_normalized = None;
+                        if self.space_on.is_none() {
+                            self.player.stop();
                         }
                     };
                     false
                 }
             };
-            if rep {
-                if let Some(e) = self.current_playing_event_normalized {
-                    self.handle_on(e);
-                }
+            if rep && let Some(e) = self.current_playing_event_normalized {
+                self.handle_on(e);
             }
         }
     }

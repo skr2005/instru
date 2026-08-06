@@ -49,10 +49,10 @@ impl TunePlayer {
     }
 
     pub fn start(&mut self, detune: f32) -> bool {
-        if let Some(s) = &self.playing_status {
-            if s.osci.detune().value() == detune {
-                return false;
-            }
+        if let Some(s) = &self.playing_status
+            && s.osci.detune().value() == detune
+        {
+            return false;
         }
         self.stop();
         let mut osci = OscillatorNode::new(
