@@ -2,6 +2,7 @@
 name = "instru"
 version = "0.0.0"
 description = "Interactively play sine waves at different pitches in terminals"
+license = "0BSD"
 edition = "2024"
 
 [dependencies]

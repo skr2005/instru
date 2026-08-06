@@ -19,4 +19,4 @@ Tested and not working environments:
 
 Unfortunately, there is currently no furthur documentation. I tried to keep the code not too much to read, though.
 
-Code in this repository is licensed under 0BSD.
+Code in this repository is licensed under 0BSD, see LICENSE for the details.
