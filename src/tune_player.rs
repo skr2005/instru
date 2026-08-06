@@ -15,16 +15,6 @@ pub struct TunePlayer {
     playing_status: Option<PlayingStatus>,
 }
 
-pub mod detunes_from_c {
-    pub const C: f32 = 300.;
-    pub const D: f32 = 500.;
-    pub const E: f32 = 700.;
-    pub const F: f32 = 800.;
-    pub const G: f32 = 1000.;
-    pub const A: f32 = 1200.; // 880 Hz
-    pub const B: f32 = 1400.;
-}
-
 pub fn ottava(detune: f32, n: isize) -> f32 {
     detune + (1200 * n) as f32
 }
@@ -48,7 +38,11 @@ impl TunePlayer {
         Self::default()
     }
 
-    pub fn start(&mut self, detune: f32) -> bool {
+    pub fn start(
+        &mut self,
+        fundamental_frenquncy: f32,
+        detune: f32,
+    ) -> bool {
         if let Some(s) = &self.playing_status
             && s.osci.detune().value() == detune
         {
@@ -59,7 +53,7 @@ impl TunePlayer {
             &self.ctx,
             OscillatorOptions {
                 type_: OscillatorType::Sine,
-                frequency: 440., // C = 523.25 Hz, not middle C
+                frequency: fundamental_frenquncy,
                 detune,
                 periodic_wave: None,
                 audio_node_options: AudioNodeOptions::default(),

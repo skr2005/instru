@@ -1,6 +1,5 @@
 use crate::tune_player::alter;
 
-use crate::tune_player::detunes_from_c;
 use crate::tune_player::ottava;
 
 use crossterm::event::KeyModifiers;
@@ -16,6 +15,7 @@ pub struct PlayMachine {
     flat: bool,
     sharp: bool,
     otta_from_default: isize,
+    a_frequency: f32,
 }
 
 fn low_char2detune_from_c(ch: char) -> Option<f32> {
@@ -32,6 +32,16 @@ fn low_char2detune_from_c(ch: char) -> Option<f32> {
     }
 }
 
+pub mod detunes_from_c {
+    pub const C: f32 = -900.;
+    pub const D: f32 = -700.;
+    pub const E: f32 = -500.;
+    pub const F: f32 = -400.;
+    pub const G: f32 = -200.;
+    pub const A: f32 = 0.;
+    pub const B: f32 = 200.;
+}
+
 fn normalize_char_event(k: KeyEvent) -> KeyEvent {
     use crossterm::event::KeyCode::*;
 
@@ -46,7 +56,7 @@ fn normalize_char_event(k: KeyEvent) -> KeyEvent {
 }
 
 impl PlayMachine {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(a_frequency: f32) -> Self {
         Self {
             player: TunePlayer::new(),
             current_playing_event_normalized: None,
@@ -54,6 +64,7 @@ impl PlayMachine {
             sharp: false,
             flat: false,
             otta_from_default: 0,
+            a_frequency,
         }
     }
 
@@ -80,7 +91,7 @@ impl PlayMachine {
                 det -= 1
             }
             let detune = alter(detune, det);
-            me.player.start(detune);
+            me.player.start(me.a_frequency, detune);
             me.current_playing_event_normalized = Some(k);
         };
 

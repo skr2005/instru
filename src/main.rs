@@ -1,3 +1,4 @@
+use clap::Parser;
 use std::io::stdout;
 
 use crossterm::{
@@ -34,20 +35,19 @@ fn try_enable_kb_enhancement() -> (impl Drop, [Option<std::io::Error>; 3])
     (Guard(err.iter().filter(|e| e.is_none()).count()), err)
 }
 
-fn play_loop() {
-    const DBG: bool = false;
-
+fn play_loop(main_args: &MainArgs) {
     let (_guard, e) = try_enable_kb_enhancement();
 
-    if DBG {
+    if main_args.debug {
         dbg!(e);
     }
 
-    let mut play_machine = play_machine::PlayMachine::new();
+    let mut play_machine =
+        play_machine::PlayMachine::new(main_args.a_frequency);
     loop {
         let event = read().unwrap();
         if let Event::Key(k) = event {
-            if DBG {
+            if main_args.debug {
                 dbg!(k);
             }
             if k.is_press() || k.is_repeat() {
@@ -71,8 +71,24 @@ fn play_loop() {
     }
 }
 
+#[derive(Debug, Parser)]
+#[command(version, about, long_about = None)]
+struct MainArgs {
+    /// Enable logging and other things for debug use
+    #[arg(long)]
+    debug: bool,
+
+    /// The frequency initially matching the key A
+    ///
+    /// Set it to 440 if you want the key C to initially match middle C.
+    #[arg(long, short, default_value_t = 880.)]
+    a_frequency: f32,
+}
+
 fn main() {
+    let args = MainArgs::parse();
+
     terminal::enable_raw_mode().unwrap();
-    play_loop();
+    play_loop(&args);
     terminal::disable_raw_mode().unwrap();
 }
