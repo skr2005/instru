@@ -11,7 +11,7 @@ use crossterm::{
 mod play_machine;
 mod tune_player;
 
-fn try_enable_kb_enhancement() -> (impl Drop, bool) {
+fn try_enable_kb_enhancement() -> (impl Drop, Option<std::io::Error>) {
     let res = execute!(
         stdout(),
         PushKeyboardEnhancementFlags(
@@ -26,12 +26,18 @@ fn try_enable_kb_enhancement() -> (impl Drop, bool) {
             }
         }
     }
-    (Guard(res.is_ok()), res.is_ok())
+    (Guard(res.is_ok()), res.err())
 }
 
 fn play_loop() {
     const DBG: bool = false;
-    let _guard = try_enable_kb_enhancement();
+
+    let (_guard, e) = try_enable_kb_enhancement();
+
+    if DBG && let Some(e) = e {
+        dbg!(e);
+    }
+
     let mut play_machine = play_machine::PlayMachine::new();
     loop {
         let event = read().unwrap();
