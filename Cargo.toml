@@ -1,7 +1,7 @@
 [package]
 name = "instru"
-version = "0.1.0"
-description = "A simple CLI tool to play sine waves at different pitches"
+version = "0.0.0"
+description = "Interactively play sine waves at different pitches in terminals"
 edition = "2024"
 
 [dependencies]
