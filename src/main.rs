@@ -11,22 +11,27 @@ use crossterm::{
 mod play_machine;
 mod tune_player;
 
-fn try_enable_kb_enhancement() -> (impl Drop, Option<std::io::Error>) {
-    let res = execute!(
-        stdout(),
-        PushKeyboardEnhancementFlags(
-            KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-        )
-    );
-    struct Guard(bool);
+fn try_enable_kb_enhancement() -> (impl Drop, [Option<std::io::Error>; 3])
+{
+    let try_flags = [
+        KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES,
+        KeyboardEnhancementFlags::REPORT_EVENT_TYPES,
+        KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES,
+    ];
+
+    let err = try_flags.map(|f| {
+        execute!(stdout(), PushKeyboardEnhancementFlags(f)).err()
+    });
+
+    struct Guard(usize);
     impl Drop for Guard {
         fn drop(&mut self) {
-            if self.0 {
+            for _ in 0..self.0 {
                 execute!(stdout(), PopKeyboardEnhancementFlags).unwrap();
             }
         }
     }
-    (Guard(res.is_ok()), res.err())
+    (Guard(err.iter().filter(|e| e.is_none()).count()), err)
 }
 
 fn play_loop() {
@@ -34,7 +39,7 @@ fn play_loop() {
 
     let (_guard, e) = try_enable_kb_enhancement();
 
-    if DBG && let Some(e) = e {
+    if DBG {
         dbg!(e);
     }
 
