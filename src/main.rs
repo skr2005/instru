@@ -89,6 +89,13 @@ fn main() {
     let args = MainArgs::parse();
 
     terminal::enable_raw_mode().unwrap();
+    struct Guard;
+    impl Drop for Guard {
+        fn drop(&mut self) {
+            terminal::disable_raw_mode().unwrap();
+        }
+    }
+    let _g = Guard;
+
     play_loop(&args);
-    terminal::disable_raw_mode().unwrap();
 }
