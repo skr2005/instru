@@ -9,3 +9,4 @@ edition = "2024"
 clap = { version = "4.6.6", features = ["derive", "wrap_help", "unicode"] }
 crossterm = { version = "0.29.0", default-features = false, features = ["windows", "events", "derive-more"]}
 web-audio-api = { version = "1.2.0", default-features = false, features = ["cpal"] }
+evdev = { version = "0.13.2", default-features = false }
