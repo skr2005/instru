@@ -66,27 +66,28 @@ pub fn play_loop(main_args: &MainArgs) {
     let mut play_machine = PlayMachine::new(ctx, main_args.a_frequency);
     loop {
         let event = read().unwrap();
-        if let Event::Key(k) = event {
-            if main_args.debug {
-                dbg!(k);
+        let Event::Key(k) = event else {
+            continue;
+        };
+        if main_args.debug {
+            dbg!(k);
+        }
+        if k.is_press() || k.is_repeat() {
+            if k.code.is_esc()
+                || (k.modifiers.contains(KeyModifiers::CONTROL)
+                    && (k.code == KeyCode::Char('c')
+                        || k.code == KeyCode::Char('C')
+                        || k.code == KeyCode::Char('z')
+                        || k.code == KeyCode::Char('Z')
+                        || k.code == KeyCode::Char('d')
+                        || k.code == KeyCode::Char('D')))
+            {
+                return;
             }
-            if k.is_press() || k.is_repeat() {
-                if k.code.is_esc()
-                    || (k.modifiers.contains(KeyModifiers::CONTROL)
-                        && (k.code == KeyCode::Char('c')
-                            || k.code == KeyCode::Char('C')
-                            || k.code == KeyCode::Char('z')
-                            || k.code == KeyCode::Char('Z')
-                            || k.code == KeyCode::Char('d')
-                            || k.code == KeyCode::Char('D')))
-                {
-                    return;
-                }
-                play_machine.handle_on(k);
-            }
-            if k.is_release() {
-                play_machine.handle_off(k);
-            }
+            play_machine.handle_on(k);
+        }
+        if k.is_release() {
+            play_machine.handle_off(k);
         }
     }
 }
@@ -174,49 +175,50 @@ impl PlayMachine {
     pub(crate) fn handle_off(&mut self, k: KeyEvent) {
         use crossterm::event::KeyCode::*;
 
-        if let Char(ch) = k.code {
-            let should_replay = match ch {
-                '.' | '>' => {
-                    self.flat = false;
-                    true
+        let Char(ch) = k.code else {
+            return;
+        };
+
+        let should_replay = match ch {
+            '.' | '>' => {
+                self.flat = false;
+                true
+            }
+            '/' | '?' => {
+                self.sharp = false;
+                true
+            }
+            ' ' | 's' | 'S' => {
+                self.space_on = false;
+                if self.pressing_note_key_state.is_none() {
+                    self.player.handle_stop();
                 }
-                '/' | '?' => {
-                    self.sharp = false;
-                    true
-                }
-                ' ' | 's' | 'S' => {
-                    self.space_on = false;
-                    if self.pressing_note_key_state.is_none() {
+                false
+            }
+            _ => {
+                if let Ok(ch_note) = Note::try_from(ch)
+                    && let Some(NoteKeyState {
+                        note: playing_note, ..
+                    }) = self.pressing_note_key_state
+                    && ch_note == playing_note
+                {
+                    self.pressing_note_key_state = None;
+                    if !self.space_on {
                         self.player.handle_stop();
                     }
-                    false
-                }
-                _ => {
-                    if let Ok(ch_note) = Note::try_from(ch)
-                        && let Some(NoteKeyState {
-                            note: playing_note,
-                            ..
-                        }) = self.pressing_note_key_state
-                        && ch_note == playing_note
-                    {
-                        self.pressing_note_key_state = None;
-                        if !self.space_on {
-                            self.player.handle_stop();
-                        }
-                    };
-                    false
-                }
-            };
-            if should_replay
-                && let Some(NoteKeyState { note, ottava }) =
-                    self.pressing_note_key_state
-            {
-                self.player.handle_play(
-                    note,
-                    self.sharp as isize - self.flat as isize,
-                    ottava,
-                );
+                };
+                false
             }
+        };
+        if should_replay
+            && let Some(NoteKeyState { note, ottava }) =
+                self.pressing_note_key_state
+        {
+            self.player.handle_play(
+                note,
+                self.sharp as isize - self.flat as isize,
+                ottava,
+            );
         }
     }
 }

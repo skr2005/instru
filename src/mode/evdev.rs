@@ -68,9 +68,9 @@ pub fn play_loop(main_args: &MainArgs) {
                 dbg!(key_code, val);
             }
             if val == 0 {
-                play_machine.handle_off(key_code);
+                play_machine.handle(false, key_code);
             } else {
-                play_machine.handle_on(key_code);
+                play_machine.handle(true, key_code);
             }
         }
     }
@@ -120,7 +120,7 @@ impl PlayMachine {
         }
     }
 
-    pub fn handle_on(&mut self, k: KeyCode) {
+    pub fn handle(&mut self, is_on: bool, k: KeyCode) {
         let Self {
             player,
             key_state:
@@ -130,96 +130,79 @@ impl PlayMachine {
                 },
         } = self;
 
-        match k {
-            KeyCode::KEY_S | KeyCode::KEY_SPACE => {
-                *modifiers |= KeyState::S;
-            }
-            KeyCode::KEY_DOT => {
-                *modifiers |= KeyState::FLAT;
-            }
-            KeyCode::KEY_SLASH => {
-                *modifiers |= KeyState::SHARP;
-            }
-            KeyCode::KEY_LEFTALT | KeyCode::KEY_RIGHTALT => {
-                *modifiers |= KeyState::OTTAVA_BASSA;
-            }
-            KeyCode::KEY_LEFTSHIFT | KeyCode::KEY_RIGHTSHIFT => {
-                *modifiers |= KeyState::OTTAVA_ALTA;
-            }
-            KeyCode::KEY_UP => {
-                player.handle_transpose(0, 1);
-            }
-            KeyCode::KEY_DOWN => {
-                player.handle_transpose(0, -1);
-            }
-            k if let Ok(note) = k.try_into() => {
-                *note_key = Some(note);
-            }
-            _ => (),
-        }
-        if let Some(note) = note_key {
-            let modif_has = |m| ((*modifiers & m) != 0) as isize;
-            player.handle_play(
-                *note,
-                modif_has(KeyState::SHARP) - modif_has(KeyState::FLAT),
-                modif_has(KeyState::OTTAVA_ALTA)
-                    - modif_has(KeyState::OTTAVA_BASSA),
-            );
-        }
-    }
-
-    fn handle_off(&mut self, k: KeyCode) {
-        let Self {
-            player,
-            key_state:
-                KeyState {
-                    note_key,
-                    modifiers,
-                },
-        } = self;
-
-        match k {
-            KeyCode::KEY_DOT => {
-                *modifiers &= !KeyState::FLAT;
-            }
-            KeyCode::KEY_SLASH => {
-                *modifiers &= !KeyState::SHARP;
-            }
-            KeyCode::KEY_LEFTALT | KeyCode::KEY_RIGHTALT => {
-                *modifiers &= !KeyState::OTTAVA_BASSA;
-            }
-            KeyCode::KEY_LEFTSHIFT | KeyCode::KEY_RIGHTSHIFT => {
-                *modifiers &= !KeyState::OTTAVA_ALTA;
-            }
-            KeyCode::KEY_S | KeyCode::KEY_SPACE => {
-                *modifiers &= !KeyState::S;
-                if note_key.is_none() {
-                    player.handle_stop()
+        if is_on {
+            match k {
+                KeyCode::KEY_S | KeyCode::KEY_SPACE => {
+                    *modifiers |= KeyState::S;
                 }
-                return;
+                KeyCode::KEY_DOT => {
+                    *modifiers |= KeyState::FLAT;
+                }
+                KeyCode::KEY_SLASH => {
+                    *modifiers |= KeyState::SHARP;
+                }
+                KeyCode::KEY_LEFTALT | KeyCode::KEY_RIGHTALT => {
+                    *modifiers |= KeyState::OTTAVA_BASSA;
+                }
+                KeyCode::KEY_LEFTSHIFT | KeyCode::KEY_RIGHTSHIFT => {
+                    *modifiers |= KeyState::OTTAVA_ALTA;
+                }
+                KeyCode::KEY_UP => {
+                    player.handle_transpose(0, 1);
+                }
+                KeyCode::KEY_DOWN => {
+                    player.handle_transpose(0, -1);
+                }
+                k if let Ok(note) = k.try_into() => {
+                    *note_key = Some(note);
+                }
+                _ => (),
             }
-            k => {
-                let Ok(note) = Note::try_from(k) else { return };
-                if Some(note) != *note_key {
+        } else {
+            match k {
+                KeyCode::KEY_DOT => {
+                    *modifiers &= !KeyState::FLAT;
+                }
+                KeyCode::KEY_SLASH => {
+                    *modifiers &= !KeyState::SHARP;
+                }
+                KeyCode::KEY_LEFTALT | KeyCode::KEY_RIGHTALT => {
+                    *modifiers &= !KeyState::OTTAVA_BASSA;
+                }
+                KeyCode::KEY_LEFTSHIFT | KeyCode::KEY_RIGHTSHIFT => {
+                    *modifiers &= !KeyState::OTTAVA_ALTA;
+                }
+                KeyCode::KEY_S | KeyCode::KEY_SPACE => {
+                    *modifiers &= !KeyState::S;
+                    if note_key.is_none() {
+                        player.handle_stop()
+                    }
                     return;
                 }
-                *note_key = None;
-                if (*modifiers & KeyState::S) != 0 {
+                k => {
+                    let Ok(note) = Note::try_from(k) else { return };
+                    if Some(note) != *note_key {
+                        return;
+                    }
+                    *note_key = None;
+                    if (*modifiers & KeyState::S) != 0 {
+                        return;
+                    }
+                    player.handle_stop();
                     return;
                 }
-                player.handle_stop();
-                return;
             }
         }
 
-        if let Some(note) = note_key {
-            let modif_has = |m| ((*modifiers & m) != 0) as isize;
-            player.handle_play(
-                *note,
-                modif_has(KeyState::SHARP) - modif_has(KeyState::FLAT),
-                modif_has(KeyState::OTTAVA_ALTA)
-                    - modif_has(KeyState::OTTAVA_BASSA),
-            );
-        }
+        let Some(note) = note_key else {
+            return;
+        };
+        let modif_has = |m| ((*modifiers & m) != 0) as isize;
+        player.handle_play(
+            *note,
+            modif_has(KeyState::SHARP) - modif_has(KeyState::FLAT),
+            modif_has(KeyState::OTTAVA_ALTA)
+                - modif_has(KeyState::OTTAVA_BASSA),
+        );
     }
 }
