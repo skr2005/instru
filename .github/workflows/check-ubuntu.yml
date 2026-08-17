@@ -1,0 +1,22 @@
+name: PR Check
+
+on:
+  push:
+    branches: ['master']
+  pull_request:
+    branches: ['master']
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup
+        uses: ./.github/workflows/setup-ubuntu
+
+      - name: Check
+        uses: ./.github/workflows/check
