@@ -1,3 +1,12 @@
+#![doc = include_str!("../README.md")]
+#![forbid(unsafe_code)]
+#![deny(rustdoc::all)]
+#![warn(clippy::allow_attributes)]
+#![warn(clippy::too_many_lines)]
+#![warn(clippy::too_long_first_doc_paragraph)]
+#![warn(clippy::todo)]
+#![cfg_attr(not(test), warn(clippy::unwrap_used))]
+
 use clap::{Parser, ValueEnum};
 use web_audio_api::context::{
     AudioContext, AudioContextLatencyCategory, AudioContextOptions,

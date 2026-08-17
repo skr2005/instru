@@ -20,11 +20,15 @@ fn ensure_terminal_raw_mode(debug: bool) -> Option<impl Drop> {
         Ok(b) if b => return None,
         _ => (),
     }
-    terminal::enable_raw_mode().unwrap();
+    terminal::enable_raw_mode()
+        .expect("Cannot enable the raw mode of the terminal");
     struct Guard;
     impl Drop for Guard {
         fn drop(&mut self) {
-            terminal::disable_raw_mode().unwrap();
+            terminal::disable_raw_mode().expect(
+                "Cannot disable the raw mode of the terminal \
+                enabled by this program earlier",
+            );
         }
     }
     Some(Guard)
@@ -46,7 +50,10 @@ fn try_enable_kb_enhancement() -> (impl Drop, [Option<std::io::Error>; 3])
     impl Drop for Guard {
         fn drop(&mut self) {
             for _ in 0..self.0 {
-                execute!(stdout(), PopKeyboardEnhancementFlags).unwrap();
+                execute!(stdout(), PopKeyboardEnhancementFlags).expect(
+                    "Cannot pop a keyboard enhancement flag \
+                    pushed ealier in the terminal",
+                );
             }
         }
     }
@@ -65,7 +72,7 @@ pub fn play_loop(main_args: &MainArgs) {
 
     let mut play_machine = PlayMachine::new(ctx, main_args.a_frequency);
     loop {
-        let event = read().unwrap();
+        let event = read().expect("Cannot read a terminal event");
         let Event::Key(k) = event else {
             continue;
         };
