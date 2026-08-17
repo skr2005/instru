@@ -1,0 +1,101 @@
+# This workflow is almost vibe-coded.
+
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  release-with-commit:
+    name: Release?
+    runs-on: ubuntu-slim
+
+    outputs:
+      created: ${{ steps.release.outputs.created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - id: release
+        uses: ChanTsune/release-with-commit@v4.0.1
+        with:
+          # Example:
+          # "Release v1.2.3"
+          #
+          # Everything after the version is used as the release body.
+          regexp: "chore: release v((\\d+([.]\\d+)*))((\\s|\\S)*)"
+          regexp_options: "us"
+          release_name: "v$1"
+          tag_name: "v$1"
+          generate_release_notes: true
+          draft: true
+          prerelease: false
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: release-with-commit
+    if: needs.release-with-commit.outputs.created == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup
+        if: matrix.os == 'ubuntu-latest'
+        uses: ./.github/workflows/setup-ubuntu
+
+      - name: Setup
+        if: matrix.os == 'windows-latest'
+        uses: ./.github/workflows/setup-windows
+
+      - name: Build
+        shell: bash
+        run: |
+          cargo build --release --target "${{ matrix.target }}"
+
+      - name: Package
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          TAG: ${{ needs.release-with-commit.outputs.tag_name }}
+        run: |
+          NAME="${GITHUB_REPOSITORY##*/}"
+          VERSION="${TAG#v}"
+
+          mkdir -p dist
+
+          if [[ "$TARGET" == *windows* ]]; then
+            7z a "dist/${NAME}-${VERSION}-${TARGET}.zip" \
+              "./target/${TARGET}/release/${NAME}.exe"
+          else
+            tar -C "./target/${TARGET}/release" \
+              -czf "dist/${NAME}-${VERSION}-${TARGET}.tar.gz" \
+              "$NAME"
+          fi
+
+      - name: Upload to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release-with-commit.outputs.tag_name }}
+        run: |
+          gh release upload "$TAG" dist/* --clobber

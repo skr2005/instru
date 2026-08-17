@@ -1,6 +1,6 @@
 [package]
 name = "instru"
-version = "0.0.0"
+version = "0.0.1"
 description = "Interactively play sine waves at different pitches in terminals"
 license = "0BSD"
 edition = "2024"
