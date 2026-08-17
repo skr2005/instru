@@ -12,8 +12,8 @@ permissions:
   contents: write
 
 jobs:
-  create-release:
-    name: Create GitHub Release When Needed
+  release-with-commit:
+    name: Release?
     runs-on: ubuntu-latest
 
     outputs:
@@ -21,8 +21,7 @@ jobs:
       tag_name: ${{ steps.release.outputs.tag_name }}
 
     steps:
-      - name: Detect release opportunies
-        id: release
+      - id: release
         uses: ChanTsune/release-with-commit@v4.0.1
         with:
           # Example:
@@ -44,8 +43,8 @@ jobs:
 
   build:
     name: Build ${{ matrix.target }}
-    needs: create-release
-    if: needs.create-release.outputs.created == 'true'
+    needs: release-with-commit
+    if: needs.release-with-commit.outputs.created == 'true'
 
     strategy:
       fail-fast: false
@@ -80,7 +79,7 @@ jobs:
         shell: bash
         env:
           TARGET: ${{ matrix.target }}
-          TAG: ${{ needs.create-release.outputs.tag_name }}
+          TAG: ${{ needs.release-with-commit.outputs.tag_name }}
         run: |
           NAME="${GITHUB_REPOSITORY##*/}"
           VERSION="${TAG#v}"
@@ -100,6 +99,6 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.create-release.outputs.tag_name }}
+          TAG: ${{ needs.release-with-commit.outputs.tag_name }}
         run: |
           gh release upload "$TAG" dist/* --clobber
