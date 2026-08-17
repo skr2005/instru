@@ -1,0 +1,34 @@
+name: PR Check
+
+on:
+  push:
+    branches: ['master']
+  pull_request:
+    branches: ['master']
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy, rustfmt
+          cache-all-crates: "true"
+
+      - name: Clippy
+        uses: clechasseur/rs-clippy-check@v6
+        with:
+          args: --all-targets
+
+      - name: Test Documentation Items
+        run: cargo doc --document-private-items --no-deps
+        
+      - name: Check Code Format
+        run: cargo fmt --check
