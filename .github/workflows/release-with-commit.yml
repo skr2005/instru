@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   create-release:
-    name: Create GitHub Release
+    name: Create GitHub Release When Needed
     runs-on: ubuntu-latest
 
     outputs:
