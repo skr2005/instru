@@ -6,7 +6,6 @@ on:
   push:
     branches:
       - master
-      - ci/*
 
 permissions:
   contents: write
@@ -30,12 +29,10 @@ jobs:
           # Everything after the version is used as the release body.
           regexp: "chore: release v((\\d+([.]\\d+)*))((\\s|\\S)*)"
           regexp_options: "us"
-
           release_name: "v$1"
           tag_name: "v$1"
-          body: "$4"
-
-          draft: true
+          generate_release_notes: true
+          draft: false
           prerelease: false
 
         env:
