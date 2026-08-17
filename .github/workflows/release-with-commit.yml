@@ -32,7 +32,7 @@ jobs:
           release_name: "v$1"
           tag_name: "v$1"
           generate_release_notes: true
-          draft: false
+          draft: true
           prerelease: false
 
         env:
