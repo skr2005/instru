@@ -21,7 +21,7 @@ jobs:
       tag_name: ${{ steps.release.outputs.tag_name }}
 
     steps:
-      - name: Create release from commit
+      - name: Detect release opportunies
         id: release
         uses: ChanTsune/release-with-commit@v4.0.1
         with:
