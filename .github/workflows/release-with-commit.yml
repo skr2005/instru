@@ -14,7 +14,7 @@ permissions:
 jobs:
   release-with-commit:
     name: Release?
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
 
     outputs:
       created: ${{ steps.release.outputs.created }}
@@ -28,7 +28,7 @@ jobs:
           # "Release v1.2.3"
           #
           # Everything after the version is used as the release body.
-          regexp: "chore: release v((\\d+([.]\\d+)*)((\\s|\\S)*))"
+          regexp: "chore: release v((\\d+([.]\\d+)*))((\\s|\\S)*)"
           regexp_options: "us"
 
           release_name: "v$1"
