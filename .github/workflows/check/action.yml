@@ -10,6 +10,8 @@ runs:
 
     - name: Test Documentation Items
       run: cargo doc --document-private-items --no-deps
+      shell: bash
       
     - name: Check Code Format
       run: cargo fmt --check
+      shell: bash

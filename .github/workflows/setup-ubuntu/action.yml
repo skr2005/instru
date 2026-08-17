@@ -11,6 +11,8 @@ runs:
         cache-all-crates: "true"
         
     - run: echo "/root/.cargo/bin" >> $GITHUB_PATH
+      shell: bash
 
     - name: Install Dependencies
       run: sudo apt install libasound2-dev
+      shell: bash
