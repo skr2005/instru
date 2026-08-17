@@ -1,0 +1,17 @@
+name: Check
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Clippy
+      uses: clechasseur/rs-clippy-check@v6.0.7
+      with:
+        args: --all-targets -- -D warnings
+
+    - name: Test Documentation Items
+      run: cargo doc --document-private-items --no-deps
+      shell: bash
+      
+    - name: Check Code Format
+      run: cargo fmt --check
+      shell: bash
