@@ -23,7 +23,7 @@ jobs:
           cache-all-crates: "true"
 
       - name: Clippy
-        uses: clechasseur/rs-clippy-check@v6
+        uses: clechasseur/rs-clippy-check@v6.0.7
         with:
           args: --all-targets
 
