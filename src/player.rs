@@ -15,8 +15,8 @@ struct TonePlayer {
     playing_status: Option<PlayingStatus>,
 }
 
-fn alter2(detune: f32, semitune: isize, octave: isize) -> f32 {
-    detune + (100 * semitune) as f32 + (1200 * octave) as f32
+fn alter2(detune: f32, semitone: isize, octave: isize) -> f32 {
+    detune + (100 * semitone) as f32 + (1200 * octave) as f32
 }
 
 impl TonePlayer {
