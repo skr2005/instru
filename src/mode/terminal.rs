@@ -10,6 +10,7 @@ use crossterm::{
     execute, terminal,
 };
 use std::io::stdout;
+use std::mem::DropGuard;
 use web_audio_api::context::AudioContext;
 
 fn ensure_terminal_raw_mode(debug: bool) -> Option<impl Drop> {
@@ -22,16 +23,12 @@ fn ensure_terminal_raw_mode(debug: bool) -> Option<impl Drop> {
     }
     terminal::enable_raw_mode()
         .expect("Cannot enable the raw mode of the terminal");
-    struct Guard;
-    impl Drop for Guard {
-        fn drop(&mut self) {
-            terminal::disable_raw_mode().expect(
-                "Cannot disable the raw mode of the terminal \
+    Some(DropGuard::new((), |()| {
+        terminal::disable_raw_mode().expect(
+            "Cannot disable the raw mode of the terminal \
                 enabled by this program earlier",
-            );
-        }
-    }
-    Some(Guard)
+        )
+    }))
 }
 
 fn try_enable_kb_enhancement() -> (impl Drop, [Option<std::io::Error>; 3])
@@ -46,18 +43,17 @@ fn try_enable_kb_enhancement() -> (impl Drop, [Option<std::io::Error>; 3])
         execute!(stdout(), PushKeyboardEnhancementFlags(f)).err()
     });
 
-    struct Guard(usize);
-    impl Drop for Guard {
-        fn drop(&mut self) {
-            for _ in 0..self.0 {
+    (
+        DropGuard::new(err.iter().filter(|e| e.is_none()).count(), |n| {
+            for _ in 0..n {
                 execute!(stdout(), PopKeyboardEnhancementFlags).expect(
                     "Cannot pop a keyboard enhancement flag \
                     pushed ealier in the terminal",
                 );
             }
-        }
-    }
-    (Guard(err.iter().filter(|e| e.is_none()).count()), err)
+        }),
+        err,
+    )
 }
 
 pub fn play_loop(main_args: &MainArgs) {
